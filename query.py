@@ -7,7 +7,7 @@ from langchain_groq import ChatGroq
 warnings.filterwarnings("ignore")
 
 # 1. Add your Groq API Key here
-os.environ["GROQ_API_KEY"] = "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"
+os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY", "")
 
 def setup_chat_engine(db_dir: str):
     # Load the exact same embedding model used in Step 2
