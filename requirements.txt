@@ -10,3 +10,4 @@ sentence-transformers
 pytesseract==0.3.10
 Pillow
 langchain-community
+python-multipart
