@@ -12,7 +12,7 @@ app = FastAPI(title="RAG AI Engine Service")
 
 # Initialize Groq LLM
 groq_api_key = os.getenv("GROQ_API_KEY")
-llm = ChatGroq(model_name="llama3-70b-8192", api_key=groq_api_key)
+llm = ChatGroq(model_name="openai/gpt-oss-120b", api_key=groq_api_key)
 
 class ProcessRequest(BaseModel):
     filePath: str
