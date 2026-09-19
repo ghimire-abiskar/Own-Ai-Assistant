@@ -1,0 +1,55 @@
+name: Deploy Python AI Service via AWS SSM
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  AWS_REGION: eu-north-1
+  ECR_REPOSITORY: rag-ai-python
+  CONTAINER_NAME: rag-python
+  EC2_INSTANCE_ID: i-0679df23d0bc43457
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push Docker Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: latest
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Deploy to EC2 via AWS SSM
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          aws ssm send-command \
+            --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploying fresh Python AI container" \
+            --parameters 'commands=[
+              "aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}",
+              "docker pull ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest",
+              "docker stop ${{ env.CONTAINER_NAME }} || true",
+              "docker rm ${{ env.CONTAINER_NAME }} || true",
+              "mkdir -p /home/ubuntu/rag_uploads /home/ubuntu/chroma_db",
+              "chmod -R 777 /home/ubuntu/rag_uploads /home/ubuntu/chroma_db",
+              "docker run -d --name ${{ env.CONTAINER_NAME }} -p 8000:8000 -v /home/ubuntu/rag_uploads:/app/uploads -v /home/ubuntu/chroma_db:/app/chroma_db -e GROQ_API_KEY=${{ secrets.GROQ_API_KEY }} ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest"
+            ]'

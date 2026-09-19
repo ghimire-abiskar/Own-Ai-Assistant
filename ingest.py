@@ -1,30 +1,36 @@
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_chroma import Chroma
+from langchain_core.documents import Document
 
-def load_and_chunk_pdf(pdf_path: str):
-    print(f"Loading PDF: {pdf_path}...")
+DB_DIR = "./chroma_db"
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+
+def get_vector_store():
+    # Downloads the ~90MB model automatically on first run
+    embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
+    return Chroma(persist_directory=DB_DIR, embedding_function=embeddings)
+
+def ingest_pdf(pdf_path: str, filename: str):
     loader = PyPDFLoader(pdf_path)
     pages = loader.load()
     
-    print(f"Successfully loaded {len(pages)} pages.")
+    # Update metadata to include the filename for source tracking
+    for page in pages:
+        page.metadata['source'] = filename
+        
+    _chunk_and_store(pages)
 
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=800,
-        chunk_overlap=150,
-        length_function=len,
-        is_separator_regex=False,
-    )
+def ingest_text(text: str, filename: str):
+    # Wrap raw OCR text into a LangChain Document
+    doc = Document(page_content=text, metadata={"source": filename})
+    _chunk_and_store([doc])
 
-    chunks = text_splitter.split_documents(pages)
-    print(f"Total chunks created: {len(chunks)}\n")
-    return chunks
-
-if __name__ == "__main__":
-    sample_pdf = "sample.pdf" 
-    try:
-        chunks = load_and_chunk_pdf(sample_pdf)
-        print("=== Sample Chunk Preview ===")
-        print(f"Page Number: {chunks[0].metadata['page']}")
-        print(f"Content:\n{chunks[0].page_content[:200]}...")
-    except Exception as e:
-        print(f"Error: {e}")
+def _chunk_and_store(documents):
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=150)
+    chunks = text_splitter.split_documents(documents)
+    
+    vector_store = get_vector_store()
+    vector_store.add_documents(chunks)
+    print(f"Successfully ingested {len(chunks)} chunks into ChromaDB.")
