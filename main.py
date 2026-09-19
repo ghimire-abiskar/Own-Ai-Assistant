@@ -1,6 +1,7 @@
 import os
+import shutil
 import warnings
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from langchain_groq import ChatGroq
 from ocr import extract_text_from_image
@@ -14,31 +15,34 @@ app = FastAPI(title="RAG AI Engine Service")
 groq_api_key = os.getenv("GROQ_API_KEY")
 llm = ChatGroq(model_name="openai/gpt-oss-120b", api_key=groq_api_key)
 
-class ProcessRequest(BaseModel):
-    filePath: str
-    fileName: str
-
 class QueryRequest(BaseModel):
     question: str
 
 @app.post("/process")
-async def process_document(request: ProcessRequest):
-    print(f"Received request to process: {request.fileName}")
+async def process_document(file: UploadFile = File(...)):
+    print(f"Received request to process: {file.filename}")
     
-    if not os.path.exists(request.filePath):
-        raise HTTPException(status_code=404, detail=f"File not found: {request.filePath}")
+    # 1. Ensure the upload directory exists
+    upload_dir = "/app/uploads"
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    # 2. Save the incoming network file to the Python container's volume
+    file_location = os.path.join(upload_dir, file.filename)
+    with open(file_location, "wb+") as file_object:
+        shutil.copyfileobj(file.file, file_object)
         
-    file_ext = request.fileName.split('.')[-1].lower()
+    file_ext = file.filename.split('.')[-1].lower()
     
     try:
+        # 3. Process the file now that it exists locally on this machine
         if file_ext in ['png', 'jpg', 'jpeg']:
-            text = extract_text_from_image(request.filePath)
-            ingest_text(text, request.fileName)
-            return {"status": "success", "message": f"Image '{request.fileName}' OCR complete and added to Vector DB."}
+            text = extract_text_from_image(file_location)
+            ingest_text(text, file.filename)
+            return {"status": "success", "message": f"Image '{file.filename}' OCR complete and added to Vector DB."}
             
         elif file_ext == 'pdf':
-            ingest_pdf(request.filePath, request.fileName)
-            return {"status": "success", "message": f"PDF '{request.fileName}' chunked and added to Vector DB."}
+            ingest_pdf(file_location, file.filename)
+            return {"status": "success", "message": f"PDF '{file.filename}' chunked and added to Vector DB."}
             
         else:
             return {"status": "ignored", "message": "Unsupported file format."}
