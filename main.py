@@ -58,6 +58,16 @@ async def handle_query(request: QueryRequest):
         
         # 1. Fetch relevant chunks
         docs = retriever.invoke(request.question)
+        print("\n========== RETRIEVED CHUNKS ==========")
+
+        for i, doc in enumerate(docs):
+            print(f"\n--- CHUNK {i + 1} ---")
+            print("SOURCE:", doc.metadata.get("source"))
+            print("PAGE:", doc.metadata.get("page"))
+            print("CONTENT:")
+            print(doc.page_content)
+
+        print("\n======================================")
         context = "\n\n".join([doc.page_content for doc in docs])
         sources = list(set([doc.metadata.get('source', 'Unknown Document') for doc in docs]))
 

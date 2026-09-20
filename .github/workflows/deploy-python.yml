@@ -63,6 +63,7 @@ jobs:
               "docker pull ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest",
               "docker stop ${{ env.CONTAINER_NAME }} || true",
               "docker rm ${{ env.CONTAINER_NAME }} || true",
+              "sudo docker system prune -af"
               "mkdir -p /home/ubuntu/rag_uploads /home/ubuntu/chroma_db",
               "chmod -R 777 /home/ubuntu/rag_uploads /home/ubuntu/chroma_db",
               "docker run -d --name ${{ env.CONTAINER_NAME }} -p 8000:8000 -v /home/ubuntu/rag_uploads:/app/uploads -v /home/ubuntu/chroma_db:/app/chroma_db -e GROQ_API_KEY=${{ secrets.GROQ_API_KEY }} ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest"
