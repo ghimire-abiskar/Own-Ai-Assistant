@@ -10,8 +10,8 @@ from ingest import ingest_pdf, ingest_text, get_vector_store
 
 # Use these stable imports matching your requirements.txt:
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
-from langchain.retrievers.document_compressors import CrossEncoderReranker
-from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
+from langchain_classic.retrievers.document_compressors import CrossEncoderReranker
+from langchain_classic.retrievers.contextual_compression import ContextualCompressionRetriever
 
 warnings.filterwarnings("ignore")
 
