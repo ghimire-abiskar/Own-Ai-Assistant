@@ -9,6 +9,7 @@ langchain-groq
 sentence-transformers
 pytesseract==0.3.10
 Pillow
+langchain
 langchain-community
 python-multipart
 pypdf
