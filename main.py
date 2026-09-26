@@ -7,9 +7,12 @@ from langchain_groq import ChatGroq
 
 from ocr import extract_text_from_image
 from ingest import ingest_pdf, ingest_text, get_vector_store
+
+# Use these stable imports matching your requirements.txt:
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
-from langchain_community.document_compressors.cross_encoder_rerank import CrossEncoderReranker
+from langchain.retrievers.document_compressors import CrossEncoderReranker
 from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
+
 warnings.filterwarnings("ignore")
 
 app = FastAPI(title="RAG AI Engine Service")
