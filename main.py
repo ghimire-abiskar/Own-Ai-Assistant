@@ -22,11 +22,9 @@ class QueryRequest(BaseModel):
 async def process_document(file: UploadFile = File(...)):
     print(f"Received request to process: {file.filename}")
     
-    # 1. Ensure the upload directory exists
     upload_dir = "/app/uploads"
     os.makedirs(upload_dir, exist_ok=True)
     
-    # 2. Save the incoming network file to the Python container's volume
     file_location = os.path.join(upload_dir, file.filename)
     with open(file_location, "wb+") as file_object:
         shutil.copyfileobj(file.file, file_object)
@@ -34,7 +32,6 @@ async def process_document(file: UploadFile = File(...)):
     file_ext = file.filename.split('.')[-1].lower()
     
     try:
-        # 3. Process the file now that it exists locally on this machine
         if file_ext in ['png', 'jpg', 'jpeg']:
             text = extract_text_from_image(file_location)
             ingest_text(text, file.filename)
@@ -54,9 +51,8 @@ async def process_document(file: UploadFile = File(...)):
 async def handle_query(request: QueryRequest):
     try:
         vector_store = get_vector_store()
-        retriever = vector_store.as_retriever(search_kwargs={"k": 3})
+        retriever = vector_store.as_retriever(search_kwargs={"k": 20})
         
-        # 1. Fetch relevant chunks
         docs = retriever.invoke(request.question)
         print("\n========== RETRIEVED CHUNKS ==========")
 

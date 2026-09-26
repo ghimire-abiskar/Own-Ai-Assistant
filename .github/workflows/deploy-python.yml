@@ -60,7 +60,7 @@ jobs:
             --comment "Deploying fresh Python AI container" \
             --parameters 'commands=[
               "aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}",
-                "docker stop ${{ env.CONTAINER_NAME }} || true",
+              "docker stop ${{ env.CONTAINER_NAME }} || true",
               "docker rm ${{ env.CONTAINER_NAME }} || true",
               "docker system prune -af",
               "mkdir -p /home/ubuntu/rag_uploads /home/ubuntu/chroma_db",
